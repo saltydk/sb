@@ -565,11 +565,41 @@ recreate-venv () {
 
 inventory () {
     local file_path="/srv/git/saltbox/inventories/host_vars/localhost.yml"
+    local default_editor="nano"
+    local approved_editors=("nano" "vim" "vi" "emacs" "gedit" "code")
 
-    if [[ -f "$file_path" ]]; then
-        ${EDITOR:-nano} "$file_path"
-    else
+    # Check if file exists
+    if [[ ! -f "$file_path" ]]; then
         echo "Error: The inventory file 'localhost.yml' does not yet exist."
+        return 1
+    fi
+
+    # Check if EDITOR is in the approved list
+    local is_approved=0
+    for editor in "${approved_editors[@]}"; do
+        if [[ "${EDITOR}" == "$editor" ]]; then
+            is_approved=1
+            break
+        fi
+    done
+
+    if [[ "$is_approved" -eq 0 ]]; then
+        if [[ -z "${EDITOR}" ]]; then
+            # Use default if EDITOR is not set
+            $default_editor "$file_path"
+        else
+            # Prompt for confirmation if EDITOR is not in approved list
+            echo "The EDITOR variable is set to an unrecognized value: $EDITOR"
+            read -p "Are you sure you want to use it to edit the file? (y/N) " confirm
+            if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                ${EDITOR} "$file_path"
+            else
+                echo "Using default editor: $default_editor"
+                $default_editor "$file_path"
+            fi
+        fi
+    else
+        ${EDITOR:-$default_editor} "$file_path"
     fi
 }
 
