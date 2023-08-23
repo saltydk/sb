@@ -563,13 +563,26 @@ recreate-venv () {
     chown -R "${user_name}":"${user_name}" "/srv/ansible"
 }
 
+inventory () {
+    local file_path="/srv/git/saltbox/inventories/host_vars/localhost.yml"
+
+    if [[ -f "$file_path" ]]; then
+        ${EDITOR:-nano} "$file_path"
+    else
+        echo "Error: The inventory file 'localhost.yml' does not yet exist."
+    fi
+}
+
 usage () {
     echo "Usage:"
-    echo "    sb update              Update Saltbox."
-    echo "    sb list                List Saltbox tags."
-    echo "    sb install <tag>       Install <tag>."
-    echo "    sb bench               Run bench.sh"
-    echo "    sb recreate-venv       Re-create Ansible venv."
+    echo "    sb update                     Updates Saltbox (resets the branch to master)."
+    echo "    sb list                       List Saltbox tags."
+    echo "    sb install <tag>              Install <tag>."
+    echo "    sb bench                      Run bench.sh"
+    echo "    sb recreate-venv              Re-create Ansible venv."
+    echo "    sb inventory                  Opens the 'localhost.yml' inventory file."
+    echo "    sb branch <branch>            Changes and updates the Saltbox branch."
+    echo "    sb sandbox-branch <branch>    Changes and updates the Sandbox branch."
 }
 
 ################################
@@ -643,6 +656,9 @@ case "$subcommand" in
         ;;
     bench)
         bench
+        ;;
+    inventory)
+        inventory
         ;;
     "") echo "A command is required."
         echo ""
