@@ -120,7 +120,11 @@ run_playbook_sb () {
   if [ $return_code -ne 0 ]; then
     echo "========================="
     echo ""
-    echo "Error: Playbook run failed, scroll up to the failed task to review."
+    if [ $return_code -eq 99 ]; then
+      echo "Error: Playbook run was aborted by the user."
+    else
+      echo "Error: Playbook run failed, scroll up to the failed task to review."
+    fi
     echo ""
     exit
   fi
@@ -144,7 +148,11 @@ run_playbook_sandbox () {
   if [ $return_code -ne 0 ]; then
     echo "========================="
     echo ""
-    echo "Error: Playbook run failed, scroll up to the failed task to review."
+    if [ $return_code -eq 99 ]; then
+      echo "Error: Playbook run was aborted by the user."
+    else
+      echo "Error: Playbook run failed, scroll up to the failed task to review."
+    fi
     echo ""
     exit
   fi
@@ -168,7 +176,11 @@ run_playbook_saltboxmod () {
   if [ $return_code -ne 0 ]; then
     echo "========================="
     echo ""
-    echo "Error: Playbook run failed, scroll up to the failed task to review."
+    if [ $return_code -eq 99 ]; then
+      echo "Error: Playbook run was aborted by the user."
+    else
+      echo "Error: Playbook run failed, scroll up to the failed task to review."
+    fi
     echo ""
     exit
   fi
