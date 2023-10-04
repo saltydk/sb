@@ -9,12 +9,21 @@
 #                     GNU General Public License v3.0                           #
 #################################################################################
 
+set -e
+set -o pipefail
+
+################################
+# Error Handling
+################################
+
+error() {
+    echo "Error: $1"
+    exit 1
+}
+
 ################################
 # Privilege Escalation
 ################################
-
-# Restart script in SUDO
-# https://unix.stackexchange.com/a/28793
 
 if [ "$EUID" != 0 ]; then
     sudo "$0" "$@"
@@ -29,10 +38,10 @@ VERBOSE=true
 
 readonly SYSCTL_PATH="/etc/sysctl.conf"
 readonly PYTHON_CMD_SUFFIX="-m pip install \
-                              --timeout=360 \
-                              --no-cache-dir \
-                              --disable-pip-version-check \
-                              --upgrade"
+                            --timeout=360 \
+                            --no-cache-dir \
+                            --disable-pip-version-check \
+                            --upgrade"
 readonly PYTHON3_CMD="/srv/ansible/venv/bin/python3 $PYTHON_CMD_SUFFIX"
 readonly ANSIBLE=">=7.0.0,<8.0.0"
 
@@ -40,10 +49,10 @@ readonly ANSIBLE=">=7.0.0,<8.0.0"
 # Argument Parser
 ################################
 
-# shellcheck disable=SC2220
 while getopts 'v' f; do
     case $f in
-    v)	VERBOSE=true;;
+    v) VERBOSE=true;;
+    *) error "Invalid option";;
     esac
 done
 
@@ -56,10 +65,13 @@ $VERBOSE || exec &>/dev/null
 ## IPv6
 if [ -f "$SYSCTL_PATH" ]; then
     ## Remove 'Disable IPv6' entries from sysctl
-    sed -i -e '/^net.ipv6.conf.all.disable_ipv6/d' "$SYSCTL_PATH"
-    sed -i -e '/^net.ipv6.conf.default.disable_ipv6/d' "$SYSCTL_PATH"
-    sed -i -e '/^net.ipv6.conf.lo.disable_ipv6/d' "$SYSCTL_PATH"
-    sysctl -p
+    sed -i -e '/^net.ipv6.conf.all.disable_ipv6/d' "$SYSCTL_PATH" \
+        || error "Failed to modify $SYSCTL_PATH (1)"
+    sed -i -e '/^net.ipv6.conf.default.disable_ipv6/d' "$SYSCTL_PATH" \
+        || error "Failed to modify $SYSCTL_PATH (2)"
+    sed -i -e '/^net.ipv6.conf.lo.disable_ipv6/d' "$SYSCTL_PATH" \
+        || error "Failed to modify $SYSCTL_PATH (3)"
+    sysctl -p || error "Failed to apply sysctl settings"
 fi
 
 ## Environmental Variables
@@ -68,15 +80,16 @@ export DEBIAN_FRONTEND=noninteractive
 ## Install Pre-Dependencies
 apt-get install -y \
     software-properties-common \
-    apt-transport-https
-apt-get update
+    apt-transport-https \
+    || error "Failed to install pre-dependencies"
+apt-get update || error "Failed to update apt-get repositories"
 
 ## Add apt repos
-add-apt-repository main
-add-apt-repository universe
-add-apt-repository restricted
-add-apt-repository multiverse
-apt-get update
+add-apt-repository main || error "Failed to add main repository"
+add-apt-repository universe || error "Failed to add universe repository"
+add-apt-repository restricted || error "Failed to add restricted repository"
+add-apt-repository multiverse || error "Failed to add multiverse repository"
+apt-get update || error "Failed to update apt-get repositories"
 
 ## Install apt Dependencies
 apt-get install -y \
@@ -92,54 +105,71 @@ apt-get install -y \
     python3-testresources \
     python3-apt \
     python3-virtualenv \
-    python3-venv
+    python3-venv \
+    || error "Failed to install apt dependencies"
 
 ## Enforce en_US.UTF-8
-locale-gen en_US.UTF-8
-update-locale
+locale-gen en_US.UTF-8 || error "Failed to generate locale"
+update-locale || error "Failed to update locale"
 export LC_ALL=en_US.UTF-8
 echo "locale was set to en_US.UTF-8"
 
-cd /srv/ansible || exit
+cd /srv/ansible || error "Failed to change directory to /srv/ansible"
 
 # Check for supported Ubuntu Releases
-release=$(lsb_release -cs)
+release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 if [[ $release =~ (focal)$ ]]; then
     echo "Focal, deploying venv with Python3.10."
-    add-apt-repository ppa:deadsnakes/ppa --yes
-    apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y
-    add-apt-repository ppa:deadsnakes/ppa -r --yes
-    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list
-    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save
-    python3.10 -m ensurepip
-    python3.10 -m venv venv
+    add-apt-repository ppa:deadsnakes/ppa --yes \
+        || error "Failed to add deadsnakes repository"
+    apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
+        || error "Failed to install Python 3.10"
+    add-apt-repository ppa:deadsnakes/ppa -r --yes \
+        || error "Failed to remove deadsnakes repository"
+    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list \
+        || error "Failed to remove repository list file"
+    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save \
+        || error "Failed to remove repository list save file"
+    python3.10 -m ensurepip \
+        || error "Failed to ensure pip for Python 3.10"
+    python3.10 -m venv venv \
+        || error "Failed to create venv using Python 3.10"
 
 elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
-    python3 -m venv venv
+    python3 -m venv venv || error "Failed to create venv using Python 3"
+
 else
-    echo "Unsupported Distro, exiting."
-    exit 1
+    error "Unsupported Distro, exiting."
 fi
 
 ## Install pip3
-cd /tmp || exit
-curl -sLO https://bootstrap.pypa.io/get-pip.py
-python3 get-pip.py
+cd /tmp || error "Failed to change directory to /tmp"
+curl -sLO https://bootstrap.pypa.io/get-pip.py \
+    || error "Failed to download get-pip.py"
+python3 get-pip.py || error "Failed to install pip3"
 
 ## Install pip3 Dependencies
 $PYTHON3_CMD \
-    pip setuptools wheel
+    pip setuptools wheel \
+    || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
 $PYTHON3_CMD \
     pyOpenSSL requests netaddr \
     jmespath jinja2 docker \
     ruamel.yaml tld argon2_cffi \
     ndg-httpsclient dnspython lxml \
     jmespath passlib PyMySQL \
-    ansible$ANSIBLE
+    ansible$ANSIBLE \
+    || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 
-cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
+cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
+    || error "Failed to copy ansible binaries to /usr/local/bin"
 
 ## Copy /usr/local/bin/pip to /usr/bin/pip
-[ -f /usr/local/bin/pip3 ] && cp /usr/local/bin/pip3 /usr/bin/pip3
+if [ -f /usr/local/bin/pip3 ]; then
+    cp /usr/local/bin/pip3 /usr/bin/pip3 || error "Failed to copy pip3 to /usr/bin"
+else
+    error "/usr/local/bin/pip3 not found"
+fi
+
