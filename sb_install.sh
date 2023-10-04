@@ -25,12 +25,21 @@ BRANCH="master"
 # Functions
 ################################
 
-run_cmd () {
+run_cmd() {
+    local cmd_exit_code
+
     if $VERBOSE; then
         printf '%s\n' "+ $*" >&2;
         "$@"
+        cmd_exit_code=$?
     else
         "$@" > /dev/null 2>&1
+        cmd_exit_code=$?
+    fi
+
+    if [ $cmd_exit_code -ne 0 ]; then
+        echo "Command failed with exit code $cmd_exit_code: $*" >&2
+        exit $cmd_exit_code
     fi
 }
 
