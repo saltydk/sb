@@ -16,7 +16,7 @@
 # https://unix.stackexchange.com/a/28793
 
 if [ $EUID != 0 ]; then
-  sudo "$0" "$@"
+  exec sudo -- "$0" "$@"
   exit $?
 fi
 
