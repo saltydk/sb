@@ -108,11 +108,29 @@ apt-get install -y \
     python3-venv \
     || error "Failed to install apt dependencies"
 
-## Enforce en_US.UTF-8
-locale-gen en_US.UTF-8 || error "Failed to generate locale"
-update-locale || error "Failed to update locale"
+# Generate en_US.UTF-8 locale if it doesn't already exist
+if ! locale -a | grep -q "^en_US.UTF-8"; then
+    locale-gen en_US.UTF-8 || error "Failed to generate locale, attempting to continue..."
+fi
+
+# Update locale
+update-locale LC_ALL=en_US.UTF-8 || error "Failed to update locale, attempting to continue..."
+
+# Export the locale for the current script
 export LC_ALL=en_US.UTF-8
-echo "locale was set to en_US.UTF-8"
+
+# Check if the correct locale is active; if not, try reconfiguring locales
+if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
+    echo "Locale en_US.UTF-8 is not set, trying to reconfigure locales..."
+    dpkg-reconfigure locales
+
+    # Check again if the correct locale is active
+    if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
+        error "Locale en_US.UTF-8 still not set."
+    fi
+fi
+
+echo "Locale set to en_US.UTF-8"
 
 cd /srv/ansible || error "Failed to change directory to /srv/ansible"
 
