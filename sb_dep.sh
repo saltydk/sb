@@ -34,7 +34,7 @@ fi
 # Variables
 ################################
 
-VERBOSE=true
+VERBOSE=false
 
 readonly SYSCTL_PATH="/etc/sysctl.conf"
 readonly PYTHON_CMD_SUFFIX="-m pip install \
@@ -57,42 +57,52 @@ while getopts 'v' f; do
 done
 
 ################################
-# Main
+# Functions
 ################################
 
-$VERBOSE || exec &>/dev/null
+run_cmd() {
+    if $VERBOSE; then
+        "$@"
+    else
+        "$@" &>/dev/null
+    fi
+}
+
+################################
+# Main
+################################
 
 ## IPv6
 if [ -f "$SYSCTL_PATH" ]; then
     ## Remove 'Disable IPv6' entries from sysctl
-    sed -i -e '/^net.ipv6.conf.all.disable_ipv6/d' "$SYSCTL_PATH" \
+    run_cmd sed -i -e '/^net.ipv6.conf.all.disable_ipv6/d' "$SYSCTL_PATH" \
         || error "Failed to modify $SYSCTL_PATH (1)"
-    sed -i -e '/^net.ipv6.conf.default.disable_ipv6/d' "$SYSCTL_PATH" \
+    run_cmd sed -i -e '/^net.ipv6.conf.default.disable_ipv6/d' "$SYSCTL_PATH" \
         || error "Failed to modify $SYSCTL_PATH (2)"
-    sed -i -e '/^net.ipv6.conf.lo.disable_ipv6/d' "$SYSCTL_PATH" \
+    run_cmd sed -i -e '/^net.ipv6.conf.lo.disable_ipv6/d' "$SYSCTL_PATH" \
         || error "Failed to modify $SYSCTL_PATH (3)"
-    sysctl -p || error "Failed to apply sysctl settings"
+    run_cmd sysctl -p || error "Failed to apply sysctl settings"
 fi
 
 ## Environmental Variables
 export DEBIAN_FRONTEND=noninteractive
 
 ## Install Pre-Dependencies
-apt-get install -y \
+run_cmd run_cmd apt-get install -y \
     software-properties-common \
     apt-transport-https \
     || error "Failed to install pre-dependencies"
-apt-get update || error "Failed to update apt-get repositories"
+run_cmd run_cmd apt-get update || error "Failed to update apt-get repositories"
 
 ## Add apt repos
-add-apt-repository main || error "Failed to add main repository"
-add-apt-repository universe || error "Failed to add universe repository"
-add-apt-repository restricted || error "Failed to add restricted repository"
-add-apt-repository multiverse || error "Failed to add multiverse repository"
-apt-get update || error "Failed to update apt-get repositories"
+run_cmd add-apt-repository main -y || error "Failed to add main repository"
+run_cmd add-apt-repository universe -y || error "Failed to add universe repository"
+run_cmd add-apt-repository restricted -y || error "Failed to add restricted repository"
+run_cmd add-apt-repository multiverse -y || error "Failed to add multiverse repository"
+run_cmd apt-get update || error "Failed to update apt-get repositories"
 
 ## Install apt Dependencies
-apt-get install -y \
+run_cmd apt-get install -y \
     locales \
     nano \
     git \
@@ -111,11 +121,11 @@ apt-get install -y \
 
 # Generate en_US.UTF-8 locale if it doesn't already exist
 if ! locale -a | grep -q "^en_US.UTF-8"; then
-    locale-gen en_US.UTF-8 || error "Failed to generate locale."
+    run_cmd locale-gen en_US.UTF-8 || error "Failed to generate locale."
 fi
 
 # Update locale
-update-locale LC_ALL=en_US.UTF-8 || error "Failed to update locale."
+run_cmd update-locale LC_ALL=en_US.UTF-8 || error "Failed to update locale."
 
 # Export the locale for the current script
 export LC_ALL=en_US.UTF-8
@@ -123,7 +133,7 @@ export LC_ALL=en_US.UTF-8
 # Check if the correct locale is active; if not, try reconfiguring locales
 if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
     echo "Locale en_US.UTF-8 is not set, trying to reconfigure locales..."
-    dpkg-reconfigure locales
+    run_cmd dpkg-reconfigure locales
 
     # Check again if the correct locale is active
     if [ "$(locale | grep 'LC_ALL' | cut -d= -f2 | tr -d '"')" != "en_US.UTF-8" ]; then
@@ -140,24 +150,24 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 if [[ $release =~ (focal)$ ]]; then
     echo "Focal, deploying venv with Python3.10."
-    add-apt-repository ppa:deadsnakes/ppa --yes \
+    run_cmd add-apt-repository ppa:deadsnakes/ppa --yes \
         || error "Failed to add deadsnakes repository"
-    apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
+    run_cmd apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
         || error "Failed to install Python 3.10"
-    add-apt-repository ppa:deadsnakes/ppa -r --yes \
+    run_cmd add-apt-repository ppa:deadsnakes/ppa -r --yes \
         || error "Failed to remove deadsnakes repository"
-    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list \
+    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list \
         || error "Failed to remove repository list file"
-    rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save \
+    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save \
         || error "Failed to remove repository list save file"
-    python3.10 -m ensurepip \
+    run_cmd python3.10 -m ensurepip \
         || error "Failed to ensure pip for Python 3.10"
-    python3.10 -m venv venv \
+    run_cmd python3.10 -m venv venv \
         || error "Failed to create venv using Python 3.10"
 
 elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
-    python3 -m venv venv || error "Failed to create venv using Python 3."
+    run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
 
 else
     error "Unsupported Distro, exiting."
@@ -165,15 +175,15 @@ fi
 
 ## Install pip3
 cd /tmp || error "Failed to change directory to /tmp"
-curl -sLO https://bootstrap.pypa.io/get-pip.py \
+run_cmd curl -sLO https://bootstrap.pypa.io/get-pip.py \
     || error "Failed to download get-pip.py"
-python3 get-pip.py || error "Failed to install pip3."
+run_cmd python3 get-pip.py || error "Failed to install pip3."
 
 ## Install pip3 Dependencies
-$PYTHON3_CMD \
+run_cmd $PYTHON3_CMD \
     pip setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
-$PYTHON3_CMD \
+run_cmd $PYTHON3_CMD \
     pyOpenSSL requests netaddr \
     jmespath jinja2 docker \
     ruamel.yaml tld argon2_cffi \
@@ -182,13 +192,12 @@ $PYTHON3_CMD \
     ansible$ANSIBLE \
     || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 
-cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
+run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
     || error "Failed to copy ansible binaries to /usr/local/bin"
 
 ## Copy /usr/local/bin/pip to /usr/bin/pip
 if [ -f /usr/local/bin/pip3 ]; then
-    cp /usr/local/bin/pip3 /usr/bin/pip3 || error "Failed to copy pip3 to /usr/bin"
+    run_cmd cp /usr/local/bin/pip3 /usr/bin/pip3 || error "Failed to copy pip3 to /usr/bin"
 else
     error "/usr/local/bin/pip3 not found"
 fi
-

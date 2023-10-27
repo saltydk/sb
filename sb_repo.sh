@@ -50,10 +50,20 @@ while getopts ':b:vh' f; do
 done
 
 ################################
-# Main
+# Functions
 ################################
 
-$VERBOSE || exec &>/dev/null
+run_cmd() {
+    if $VERBOSE; then
+        "$@"
+    else
+        "$@" &>/dev/null
+    fi
+}
+
+################################
+# Main
+################################
 
 $VERBOSE && echo "git branch selected: $BRANCH"
 
@@ -61,31 +71,31 @@ $VERBOSE && echo "git branch selected: $BRANCH"
 if [ -d "$SALTBOX_PATH" ]; then
     if [ -d "$SALTBOX_PATH/.git" ]; then
         cd "$SALTBOX_PATH" || exit
-        git fetch --all --prune
+        run_cmd git fetch --all --prune
         # shellcheck disable=SC2086
-        git checkout -f $BRANCH
+        run_cmd git checkout -f $BRANCH
         # shellcheck disable=SC2086
-        git reset --hard origin/$BRANCH
-        git submodule update --init --recursive
+        run_cmd git reset --hard origin/$BRANCH
+        run_cmd git submodule update --init --recursive
         $VERBOSE && echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
     else
         cd "$SALTBOX_PATH" || exit
-        rm -rf library/
-        git init
-        git remote add origin "$SALTBOX_REPO"
-        git fetch --all --prune
+        run_cmd rm -rf library/
+        run_cmd git init
+        run_cmd git remote add origin "$SALTBOX_REPO"
+        run_cmd git fetch --all --prune
         # shellcheck disable=SC2086
-        git branch $BRANCH origin/$BRANCH
+        run_cmd git branch $BRANCH origin/$BRANCH
         # shellcheck disable=SC2086
-        git reset --hard origin/$BRANCH
-        git submodule update --init --recursive
+        run_cmd git reset --hard origin/$BRANCH
+        run_cmd git submodule update --init --recursive
         $VERBOSE && echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
     fi
 else
     # shellcheck disable=SC2086
-    git clone -b $BRANCH "$SALTBOX_REPO" "$SALTBOX_PATH"
+    run_cmd git clone -b $BRANCH "$SALTBOX_REPO" "$SALTBOX_PATH"
     cd "$SALTBOX_PATH" || exit
-    git submodule update --init --recursive
+    run_cmd git submodule update --init --recursive
     $VERBOSE && echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
 fi
 
@@ -93,11 +103,11 @@ fi
 shopt -s nullglob
 for i in "$SALTBOX_PATH"/defaults/*.default; do
     if [ ! -f "$SALTBOX_PATH/$(basename "${i%.*}")" ]; then
-        cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
+        run_cmd cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
     fi
 done
 shopt -u nullglob
 
 ## Activate Git Hooks
 cd "$SALTBOX_PATH" || exit
-bash "$SALTBOX_PATH"/bin/git/init-hooks
+run_cmd bash "$SALTBOX_PATH"/bin/git/init-hooks
