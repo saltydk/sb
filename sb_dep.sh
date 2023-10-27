@@ -93,6 +93,7 @@ apt-get update || error "Failed to update apt-get repositories"
 
 ## Install apt Dependencies
 apt-get install -y \
+    locales \
     nano \
     git \
     curl \
@@ -110,11 +111,11 @@ apt-get install -y \
 
 # Generate en_US.UTF-8 locale if it doesn't already exist
 if ! locale -a | grep -q "^en_US.UTF-8"; then
-    locale-gen en_US.UTF-8 || error "Failed to generate locale, attempting to continue..."
+    locale-gen en_US.UTF-8 || error "Failed to generate locale."
 fi
 
 # Update locale
-update-locale LC_ALL=en_US.UTF-8 || error "Failed to update locale, attempting to continue..."
+update-locale LC_ALL=en_US.UTF-8 || error "Failed to update locale."
 
 # Export the locale for the current script
 export LC_ALL=en_US.UTF-8
@@ -156,7 +157,7 @@ if [[ $release =~ (focal)$ ]]; then
 
 elif [[ $release =~ (jammy)$ ]]; then
     echo "Jammy, deploying venv with Python3."
-    python3 -m venv venv || error "Failed to create venv using Python 3"
+    python3 -m venv venv || error "Failed to create venv using Python 3."
 
 else
     error "Unsupported Distro, exiting."
@@ -166,7 +167,7 @@ fi
 cd /tmp || error "Failed to change directory to /tmp"
 curl -sLO https://bootstrap.pypa.io/get-pip.py \
     || error "Failed to download get-pip.py"
-python3 get-pip.py || error "Failed to install pip3"
+python3 get-pip.py || error "Failed to install pip3."
 
 ## Install pip3 Dependencies
 $PYTHON3_CMD \
