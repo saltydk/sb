@@ -112,8 +112,6 @@ fi
 
 echo "Installing Saltbox Dependencies."
 
-$VERBOSE || exec &>/dev/null
-
 $VERBOSE && echo "Script Path: $SCRIPT_PATH"
 
 # Update apt cache
