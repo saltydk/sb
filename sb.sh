@@ -591,6 +591,7 @@ inventory () {
     else
       # Prompt for confirmation if EDITOR is not in approved list
       echo "The EDITOR variable is set to an unrecognized value: $EDITOR"
+      # shellcheck disable=SC2162
       read -p "Are you sure you want to use it to edit the file? (y/N) " confirm
       if [[ "$confirm" =~ ^[Yy]$ ]]; then
         ${EDITOR} "$file_path"
