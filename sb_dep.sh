@@ -43,7 +43,7 @@ readonly PYTHON_CMD_SUFFIX="-m pip install \
                             --disable-pip-version-check \
                             --upgrade"
 readonly PYTHON3_CMD="/srv/ansible/venv/bin/python3 $PYTHON_CMD_SUFFIX"
-readonly ANSIBLE=">=7.0.0,<8.0.0"
+readonly ANSIBLE=">=9.0.0,<10.0.0"
 
 ################################
 # Argument Parser
