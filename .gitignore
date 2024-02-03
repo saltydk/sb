@@ -1,3 +1,4 @@
 # Logs
 /*.log
 /.idea
+/cache.json
