@@ -316,7 +316,7 @@ update () {
     fi
 
     cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
-    sed -i 's/\/usr\/bin\/python3/\/srv\/ansible\/venv\/bin\/python3/g' /srv/git/saltbox/ansible.cfg
+    cp /opt/sandbox/defaults/ansible.cfg.default /opt/sandbox/ansible.cfg
 
     run_playbook_sb "--tags settings" && echo -e '\n'
 
@@ -335,7 +335,7 @@ sandbox-update () {
 
     git_fetch_and_reset_sandbox
 
-    sed -i 's/\/usr\/bin\/python3/\/srv\/ansible\/venv\/bin\/python3/g' /opt/sandbox/ansible.cfg
+    cp /opt/sandbox/defaults/ansible.cfg.default /opt/sandbox/ansible.cfg
 
     run_playbook_sandbox "--tags settings" && echo -e '\n'
 
