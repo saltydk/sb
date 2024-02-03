@@ -316,7 +316,7 @@ update () {
     fi
 
     cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
-    cp /opt/sandbox/defaults/ansible.cfg.default /opt/sandbox/ansible.cfg
+    cp /srv/git/saltbox/defaults/ansible.cfg.default /srv/git/saltbox/ansible.cfg
 
     run_playbook_sb "--tags settings" && echo -e '\n'
 
@@ -429,7 +429,7 @@ saltbox-branch () {
     fi
 
     cp /srv/ansible/venv/bin/ansible* /usr/local/bin/
-    sed -i 's/\/usr\/bin\/python3/\/srv\/ansible\/venv\/bin\/python3/g' /srv/git/saltbox/ansible.cfg
+    cp /srv/git/saltbox/defaults/ansible.cfg.default /srv/git/saltbox/ansible.cfg
 
     run_playbook_sb "--tags settings" && echo -e '\n'
 
@@ -449,6 +449,8 @@ sandbox-branch () {
     SANDBOX_BRANCH=$1
 
     git_fetch_and_reset_sandbox
+
+    cp /opt/sandbox/defaults/ansible.cfg.default /opt/sandbox/ansible.cfg
 
     run_playbook_sandbox "--tags settings" && echo -e '\n'
 
