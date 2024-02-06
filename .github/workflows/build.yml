@@ -21,16 +21,16 @@ jobs:
         run: cd build && python3.10 -m venv venv
 
       - name: Install Dependencies
-        run: ./venv/bin/pip install PyYAML nuitka
+        run: cd build && ./venv/bin/pip install PyYAML nuitka
 
       - name: Install Dependencies
-        run: ./venv/bin/pip list
+        run: cd build && ./venv/bin/pip list
 
       - name: Compile binary
-        run: ./venv/bin/python -m nuitka sb.py --onefile -o sb
+        run: cd build && ./venv/bin/python -m nuitka sb.py --onefile -o sb
 
       - name: Copy binary and purge build directory
-        run: cd .. && cp ./build/sb sb && rm -rf ./build
+        run: cp ./build/sb sb && rm -rf ./build
 
       - name: List Directory Contents
         run: ls -la
