@@ -1,4 +1,4 @@
-name: build test binary
+name: Build sb binary
 on:
   workflow_dispatch:
 
@@ -9,7 +9,6 @@ concurrency:
 jobs:
   build:
     runs-on: self-hosted
-
     steps:
       - name: Check-out repository
         uses: actions/checkout@v4
@@ -23,11 +22,14 @@ jobs:
       - name: Install Dependencies
         run: cd build && ./venv/bin/pip install PyYAML nuitka
 
-      - name: Install Dependencies
+      - name: List Pip modules
         run: cd build && ./venv/bin/pip list
 
+      - name: Copy sb.py to build directory
+        run: cp sb.py ./build/
+
       - name: Compile binary
-        run: cd build && ./venv/bin/python -m nuitka sb.py --onefile -o sb
+        run: cd build && ./venv/bin/python -m nuitka ../sb.py --onefile -o sb
 
       - name: Copy binary and purge build directory
         run: cp ./build/sb sb && rm -rf ./build
