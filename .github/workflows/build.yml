@@ -1,0 +1,46 @@
+name: build test binary
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+      - name: Check-out repository
+        uses: actions/checkout@v4
+
+      - name: Setup venv
+        run: mkdir build
+
+      - name: Setup venv
+        run: cd build && python3.10 -m venv venv
+
+      - name: Install Dependencies
+        run: ./venv/bin/pip install PyYAML nuitka
+
+      - name: Install Dependencies
+        run: ./venv/bin/pip list
+
+      - name: Compile binary
+        run: ./venv/bin/python -m nuitka sb.py --onefile -o sb
+
+      - name: Copy binary and purge build directory
+        run: cd .. && cp ./build/sb sb && rm -rf ./build
+
+      - name: List Directory Contents
+        run: ls -la
+
+#      - name: GIT commit and push all changed files
+#        env:
+#          CI_COMMIT_MESSAGE: Continuous Integration Build Binary
+#          CI_COMMIT_AUTHOR: Continuous Integration
+#        run: |
+#          git config --global user.name "${{ env.CI_COMMIT_AUTHOR }}"
+#          git config --global user.email "username@users.noreply.github.com"
+#          git commit -a -m "${{ env.CI_COMMIT_MESSAGE }}"
+#          git push
