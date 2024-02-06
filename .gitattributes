@@ -1,0 +1,2 @@
+/sb filter=lfs diff=lfs merge=lfs -text
+sb.* !text -filter -merge -diff
