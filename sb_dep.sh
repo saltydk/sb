@@ -194,7 +194,7 @@ run_cmd $PYTHON3_CMD \
     pip setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
 run_cmd $PYTHON3_CMD \
-    --requirements /srv/git/sb/requirements-saltbox.txt \
+    --requirement /srv/git/sb/requirements-saltbox.txt \
     || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
