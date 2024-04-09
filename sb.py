@@ -617,12 +617,6 @@ def manage_ansible_venv(recreate=False):
         print("Update script failed.")
         sys.exit(result.returncode)
 
-    # Install pip and required packages
-    subprocess.run([f"{ansible_venv_path}/venv/bin/pip", "install", "-U", "pip"])
-    required_packages = ["tld", "argon2_cffi", "ndg-httpsclient", "dnspython", "lxml", "jmespath", "passlib", "PyMySQL",
-                         "docker", "pyOpenSSL", "requests", "netaddr", "jinja2"]
-    subprocess.run([f"{ansible_venv_path}/venv/bin/pip", "install"] + required_packages)
-
     # Change ownership of the ansible directory
     subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path])
 

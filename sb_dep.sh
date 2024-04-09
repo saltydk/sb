@@ -122,7 +122,6 @@ run_cmd apt-get install -y \
     python3-dev \
     python3-testresources \
     python3-apt \
-    python3-virtualenv \
     python3-venv \
     || error "Failed to install apt dependencies"
 
@@ -195,12 +194,7 @@ run_cmd $PYTHON3_CMD \
     pip setuptools wheel \
     || error "Failed to install pip setuptools and wheel with $PYTHON3_CMD"
 run_cmd $PYTHON3_CMD \
-    pyOpenSSL requests netaddr \
-    jmespath jinja2 docker \
-    ruamel.yaml tld argon2_cffi \
-    ndg-httpsclient dnspython lxml \
-    jmespath passlib PyMySQL \
-    ansible$ANSIBLE ansible-lint \
+    --requirements /srv/git/sb/requirements-saltbox.txt \
     || error "Failed to install pip3 dependencies with $PYTHON3_CMD"
 
 run_cmd cp /srv/ansible/venv/bin/ansible* /usr/local/bin/ \
