@@ -328,13 +328,11 @@ def update_saltbox(saltbox_repo_path, saltbox_playbook_file, verbosity=0):
     custom_commands = [
         f"cp {saltbox_repo_path}/defaults/ansible.cfg.default {saltbox_repo_path}/ansible.cfg"
     ]
-    post_fetch_script = f"bash {saltbox_repo_path}/scripts/update.sh"
 
     # Check commit hash before update
     old_commit_hash = get_git_commit_hash(saltbox_repo_path)
 
-    git_fetch_and_reset(saltbox_repo_path, "master", post_fetch_script=post_fetch_script,
-                        custom_commands=custom_commands)
+    git_fetch_and_reset(saltbox_repo_path, "master", custom_commands=custom_commands)
 
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
