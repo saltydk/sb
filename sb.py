@@ -619,7 +619,7 @@ def manage_ansible_venv(recreate=False):
 
     # Run the Saltbox update script and handle its exit status
     update_script_path = "/srv/git/saltbox/scripts/update.sh"
-    result = subprocess.run(["bash", update_script_path])
+    result = subprocess.run(["bash", update_script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if result.returncode != 0:
         print("Update script failed.")
         sys.exit(result.returncode)
