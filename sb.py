@@ -595,8 +595,12 @@ def manage_ansible_venv(recreate=False):
 
         # Handle Python installation based on Ubuntu release
         if release == "focal" or release == "jammy":
-            subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env)
-            subprocess.run(["apt", "install", "python3.12", "python3.12-dev","python3.12-distutils", "python3.12-venv", "-y"], env=env)
+            add_repository_result = subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if add_repository_result.returncode != 0:
+                raise Exception(f"Failed adding deadsnakes ppa with error: {add_repository_result.stderr.decode('utf-8')}")
+            install_python_result = subprocess.run(["apt", "install", "python3.12", "python3.12-dev","python3.12-distutils", "python3.12-venv", "-y"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if install_python_result.returncode != 0:
+                raise Exception(f"Failed installing Python 3.12 with error: {install_python_result.stderr.decode('utf-8')}")
             python_cmd = "python3.12"
             subprocess.run([f"{python_cmd}", "-m", "ensurepip"])
             os.makedirs(ansible_venv_path, exist_ok=True)
