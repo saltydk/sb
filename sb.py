@@ -430,7 +430,7 @@ def check_and_update_repo(sb_repo_path):
 
         # Compare the hashes
         if head_hash != upstream_hash:
-            print("Not up to date with origin. Updating.")
+            print("sb not up to date with origin. Updating.")
 
             # Update the repository
             update_sb(sb_repo_path)
