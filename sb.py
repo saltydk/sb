@@ -590,13 +590,13 @@ def manage_ansible_venv(recreate=False):
         subprocess.run(["rm", "-rf", ansible_venv_path])
 
     if not os.path.isdir(ansible_venv_path):
+        env = os.environ.copy()
+        env["DEBIAN_FRONTEND"] = "noninteractive"
+
         # Handle Python installation based on Ubuntu release
         if release == "focal" or release == "jammy":
-            subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"])
-            subprocess.run(
-                ["apt", "install", "python3.12", "python3.12-dev",
-                 "python3.12-distutils", "python3.12-venv", "-y"])
-            subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "-r", "--yes"])
+            subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env)
+            subprocess.run(["apt", "install", "python3.12", "python3.12-dev","python3.12-distutils", "python3.12-venv", "-y"], env=env)
             python_cmd = "python3.12"
             subprocess.run([f"{python_cmd}", "-m", "ensurepip"])
             os.makedirs(ansible_venv_path, exist_ok=True)
