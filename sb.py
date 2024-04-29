@@ -119,7 +119,8 @@ def print_in_columns(tags, padding=2):
 def get_git_commit_hash(repo_path):
     """Get the current Git commit hash of the repository."""
     try:
-        completed_process = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_path, stdout=subprocess.PIPE, text=True)
+        completed_process = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo_path, stdout=subprocess.PIPE,
+                                           text=True)
     except FileNotFoundError:
         print(f"\nThe folder '{repo_path}' does not exist. This indicates an incomplete install.\n")
         sys.exit(1)
@@ -542,7 +543,8 @@ def handle_branch(arguments):
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
     skip_tags = ['sanity-check', 'pre-tasks']
-    run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags, arguments.verbose)
+    run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags,
+                         arguments.verbose)
 
     # Cache tags if commit hash changes
     asyncio.run(run_and_cache_ansible_tags(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ""))
@@ -561,7 +563,8 @@ def handle_sandbox_branch(arguments):
     # Run Settings role with specified tags and skip-tags
     tags = ['settings']
     skip_tags = ['sanity-check', 'pre-tasks']
-    run_ansible_playbook(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags, arguments.verbose)
+    run_ansible_playbook(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags, skip_tags,
+                         arguments.verbose)
 
     # Cache tags if commit hash changes
     asyncio.run(run_and_cache_ansible_tags(SANDBOX_REPO_PATH, SANDBOX_PLAYBOOK_PATH, ""))
@@ -570,6 +573,10 @@ def handle_sandbox_branch(arguments):
 
 
 def manage_ansible_venv(recreate=False):
+    if os.path.isdir("/srv/ansible/venv/bin") and not os.path.isfile("/srv/ansible/venv/bin/python3.12"):
+        print("Python 3.12 not detected in venv, forcing recreate.")
+        recreate = True
+
     if recreate:
         print("Recreating Ansible venv.")
     else:
@@ -584,21 +591,19 @@ def manage_ansible_venv(recreate=False):
 
     if not os.path.isdir(ansible_venv_path):
         # Handle Python installation based on Ubuntu release
-        if release == "focal":
+        if release == "focal" or release == "jammy":
             subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"])
             subprocess.run(
-                ["apt", "install", "python3.10", "python3.10-dev",
-                 "python3.10-distutils", "python3.10-venv", "-y"])
+                ["apt", "install", "python3.12", "python3.12-dev",
+                 "python3.12-distutils", "python3.12-venv", "-y"])
             subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "-r", "--yes"])
-            subprocess.run(["rm", "-rf", "/etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list"])
-            subprocess.run(["rm", "-rf", "/etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save"])
-            python_cmd = "python3.10"
+            python_cmd = "python3.12"
             subprocess.run([f"{python_cmd}", "-m", "ensurepip"])
             os.makedirs(ansible_venv_path, exist_ok=True)
             subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
 
-        elif release == "jammy":
-            python_cmd = "python3"
+        elif release == "noble":
+            python_cmd = "python3.12"
 
             # Create the venv directory and venv
             os.makedirs(ansible_venv_path, exist_ok=True)

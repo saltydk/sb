@@ -43,7 +43,6 @@ readonly PYTHON_CMD_SUFFIX="-m pip install \
                             --disable-pip-version-check \
                             --upgrade"
 readonly PYTHON3_CMD="/srv/ansible/venv/bin/python3 $PYTHON_CMD_SUFFIX"
-readonly ANSIBLE=">=9.0.0,<10.0.0"
 
 ################################
 # Argument Parser
@@ -101,12 +100,28 @@ run_cmd run_cmd apt-get install -y \
     || error "Failed to install pre-dependencies"
 run_cmd run_cmd apt-get update || error "Failed to update apt-get repositories"
 
+# Check for supported Ubuntu Releases
+release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
+
 ## Add apt repos
-run_cmd add-apt-repository main -y || error "Failed to add main repository"
-run_cmd add-apt-repository universe -y || error "Failed to add universe repository"
-run_cmd add-apt-repository restricted -y || error "Failed to add restricted repository"
-run_cmd add-apt-repository multiverse -y || error "Failed to add multiverse repository"
-run_cmd apt-get update || error "Failed to update apt-get repositories"
+if [[ $release =~ (focal|jammy)$ ]]; then
+    run_cmd add-apt-repository main -y || error "Failed to add main repository"
+    run_cmd add-apt-repository universe -y || error "Failed to add universe repository"
+    run_cmd add-apt-repository restricted -y || error "Failed to add restricted repository"
+    run_cmd add-apt-repository multiverse -y || error "Failed to add multiverse repository"
+    run_cmd apt-get update || error "Failed to update apt-get repositories"
+
+elif [[ $release =~ (noble)$ ]]; then
+  echo " " > /etc/apt/sources.list
+  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" || error "Failed to add $(lsb_release -sc) repositoríes"
+  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-updates repositoríes"
+  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-backports main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-backports repositoríes"
+  run_cmd add-apt-repository -n -y "deb http://security.ubuntu.com/ubuntu $(lsb_release -sc)-security main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-security repositoríes"
+  run_cmd apt update
+
+else
+    error "Unsupported Distro, exiting."
+fi
 
 ## Install apt Dependencies
 run_cmd apt-get install -y \
@@ -151,42 +166,24 @@ echo "Locale set to en_US.UTF-8"
 
 cd /srv/ansible || error "Failed to change directory to /srv/ansible"
 
-# Check for supported Ubuntu Releases
-release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
-
-if [[ $release =~ (focal)$ ]]; then
-    echo "Focal, deploying venv with Python3.10."
+if [[ $release =~ (focal|jammy)$ ]]; then
+    echo "${release^}, deploying venv with Python 3.12."
     run_cmd add-apt-repository ppa:deadsnakes/ppa --yes \
         || error "Failed to add deadsnakes repository"
-    run_cmd apt install python3.10 python3.10-dev python3.10-distutils python3.10-venv -y \
-        || error "Failed to install Python 3.10"
-    run_cmd add-apt-repository ppa:deadsnakes/ppa -r --yes \
-        || error "Failed to remove deadsnakes repository"
-    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list \
-        || error "Failed to remove repository list file"
-    run_cmd rm -rf /etc/apt/sources.list.d/deadsnakes-ubuntu-ppa-focal.list.save \
-        || error "Failed to remove repository list save file"
-    run_cmd python3.10 -m ensurepip \
-        || error "Failed to ensure pip for Python 3.10"
-    run_cmd python3.10 -m venv venv \
-        || error "Failed to create venv using Python 3.10"
-
-elif [[ $release =~ (jammy)$ ]]; then
-    echo "Jammy, deploying venv with Python3."
-    run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
+    run_cmd apt install python3.12 python3.12-dev python3.12-distutils python3.12-venv -y \
+        || error "Failed to install Python 3.12"
+    install_pip
+    run_cmd python3.12 -m venv venv \
+        || error "Failed to create venv using Python 3.12"
 
 elif [[ $release =~ (noble)$ ]]; then
-    echo "Noble, deploying venv with Python3."
+    echo "Noble, deploying venv with Python 3.12."
     # Cannot use pypa install method with Noble due to PEP 668
     run_cmd apt-get install -y python3-pip
-    run_cmd python3 -m venv venv || error "Failed to create venv using Python 3."
+    run_cmd python3.12 -m venv venv || error "Failed to create venv using Python 3."
 
 else
     error "Unsupported Distro, exiting."
-fi
-
-if [[ $release =~ (focal|jammy)$ ]]; then
-    install_pip
 fi
 
 ## Install pip3 Dependencies
