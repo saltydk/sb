@@ -422,7 +422,7 @@ def check_and_update_repo(sb_repo_path):
             raise OSError(f"Directory does not exist: {sb_repo_path}")
 
         # Fetch latest changes from the remote without changing working directory
-        subprocess.call(['git', 'fetch'], cwd=sb_repo_path)
+        subprocess.call(['git', 'fetch'], cwd=sb_repo_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         # Get the current HEAD hash and the upstream master hash without changing directory
         head_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=sb_repo_path).strip()
@@ -602,16 +602,16 @@ def manage_ansible_venv(recreate=False):
             if install_python_result.returncode != 0:
                 raise Exception(f"Failed installing Python 3.12 with error: {install_python_result.stderr.decode('utf-8')}")
             python_cmd = "python3.12"
-            subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         elif release == "noble":
             python_cmd = "python3.12"
 
             # Create the venv directory and venv
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         else:
             print("Unsupported OS.")
@@ -619,13 +619,13 @@ def manage_ansible_venv(recreate=False):
 
     # Run the Saltbox update script and handle its exit status
     update_script_path = "/srv/git/saltbox/scripts/update.sh"
-    result = subprocess.run(["bash", update_script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    result = subprocess.run(["bash", update_script_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result.returncode != 0:
         print("Update script failed.")
         sys.exit(result.returncode)
 
     # Change ownership of the ansible directory
-    subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     if recreate:
         print("Done recreating Ansible venv.")
