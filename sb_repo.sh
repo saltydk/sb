@@ -99,11 +99,17 @@ else
     $VERBOSE && echo "git branch: $(git rev-parse --abbrev-ref HEAD)"
 fi
 
+release=$(lsb_release -cs 2>/dev/null | grep -v "No LSB modules are available.")
+
 ## Copy settings and config files into Saltbox folder
 shopt -s nullglob
 for i in "$SALTBOX_PATH"/defaults/*.default; do
     if [ ! -f "$SALTBOX_PATH/$(basename "${i%.*}")" ]; then
-        run_cmd cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
+        if [[ $release =~ (focal|jammy)$ ]]; then
+            run_cmd cp -n "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
+        elif [[ $release =~ (noble)$ ]]; then
+            run_cmd cp --update=none "${i}" "$SALTBOX_PATH/$(basename "${i%.*}")"
+        fi
     fi
 done
 shopt -u nullglob

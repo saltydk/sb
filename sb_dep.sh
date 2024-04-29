@@ -105,10 +105,10 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 ## Add apt repos
 if [[ $release =~ (focal|jammy)$ ]]; then
-    run_cmd add-apt-repository main -y || error "Failed to add main repository"
-    run_cmd add-apt-repository universe -y || error "Failed to add universe repository"
-    run_cmd add-apt-repository restricted -y || error "Failed to add restricted repository"
-    run_cmd add-apt-repository multiverse -y || error "Failed to add multiverse repository"
+    run_cmd add-apt-repository main -n -y || error "Failed to add main repository"
+    run_cmd add-apt-repository universe -n -y || error "Failed to add universe repository"
+    run_cmd add-apt-repository restricted -n -y || error "Failed to add restricted repository"
+    run_cmd add-apt-repository multiverse -n -y || error "Failed to add multiverse repository"
     run_cmd apt-get update || error "Failed to update apt-get repositories"
 
 elif [[ $release =~ (noble)$ ]]; then
@@ -172,7 +172,8 @@ if [[ $release =~ (focal|jammy)$ ]]; then
         || error "Failed to add deadsnakes repository"
     run_cmd apt install python3.12 python3.12-dev python3.12-distutils python3.12-venv -y \
         || error "Failed to install Python 3.12"
-    install_pip
+    run_cmd python3.12 -m ensurepip \
+        || error "Failed to ensure pip for Python 3.12"
     run_cmd python3.12 -m venv venv \
         || error "Failed to create venv using Python 3.12"
 
@@ -185,6 +186,11 @@ elif [[ $release =~ (noble)$ ]]; then
 else
     error "Unsupported Distro, exiting."
 fi
+
+if [[ $release =~ (focal|jammy)$ ]]; then
+    install_pip
+fi
+
 
 ## Install pip3 Dependencies
 run_cmd $PYTHON3_CMD \
