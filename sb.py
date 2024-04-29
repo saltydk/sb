@@ -385,7 +385,7 @@ def update_sandbox(sandbox_repo_path, sandbox_playbook_file, verbosity=0):
 
 
 def update_sb(sb_repo_path):
-    print("Updating sb...")
+    print("Updating sb.")
 
     if not os.path.isdir(sb_repo_path):
         print(f"Error: {sb_repo_path} does not exist or is not a directory.")
