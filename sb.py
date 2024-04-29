@@ -602,16 +602,16 @@ def manage_ansible_venv(recreate=False):
             if install_python_result.returncode != 0:
                 raise Exception(f"Failed installing Python 3.12 with error: {install_python_result.stderr.decode('utf-8')}")
             python_cmd = "python3.12"
-            subprocess.run([f"{python_cmd}", "-m", "ensurepip"])
+            subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         elif release == "noble":
             python_cmd = "python3.12"
 
             # Create the venv directory and venv
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path)
+            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         else:
             print("Unsupported OS.")
@@ -625,7 +625,7 @@ def manage_ansible_venv(recreate=False):
         sys.exit(result.returncode)
 
     # Change ownership of the ansible directory
-    subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path])
+    subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     if recreate:
         print("Done recreating Ansible venv.")
