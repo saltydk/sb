@@ -587,11 +587,14 @@ def manage_ansible_venv(recreate=False):
 
     # Remove the existing venv directory during recreate
     if recreate:
-        subprocess.run(["rm", "-rf", ansible_venv_path])
+        delete_venv_result = subprocess.run(["rm", "-rf", ansible_venv_path])
+        if delete_venv_result.returncode != 0:
+            raise Exception(f"Failed deleting Ansible venv with error: {delete_venv_result.stderr.decode('utf-8')}")
 
     if not os.path.isdir(ansible_venv_path):
         env = os.environ.copy()
         env["DEBIAN_FRONTEND"] = "noninteractive"
+        python_cmd = "python3.12"
 
         # Handle Python installation based on Ubuntu release
         if release == "focal" or release == "jammy":
@@ -601,17 +604,19 @@ def manage_ansible_venv(recreate=False):
             install_python_result = subprocess.run(["apt", "install", "python3.12", "python3.12-dev","python3.12-distutils", "python3.12-venv", "-y"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if install_python_result.returncode != 0:
                 raise Exception(f"Failed installing Python 3.12 with error: {install_python_result.stderr.decode('utf-8')}")
-            python_cmd = "python3.12"
-            subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ensurepip_result = subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if ensurepip_result.returncode != 0:
+                raise Exception(f"Failed running ensurepip with error: {ensurepip_result.stderr.decode('utf-8')}")
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            deploy_venv_result = subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if deploy_venv_result.returncode != 0:
+                raise Exception(f"Failed deploying Ansible venv with error: {deploy_venv_result.stderr.decode('utf-8')}")
 
         elif release == "noble":
-            python_cmd = "python3.12"
-
-            # Create the venv directory and venv
             os.makedirs(ansible_venv_path, exist_ok=True)
-            subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            deploy_venv_noble_result = subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if deploy_venv_noble_result.returncode != 0:
+                raise Exception(f"Failed deploying Python venv with error: {deploy_venv_noble_result.stderr.decode('utf-8')}")
 
         else:
             print("Unsupported OS.")
@@ -619,13 +624,14 @@ def manage_ansible_venv(recreate=False):
 
     # Run the Saltbox update script and handle its exit status
     update_script_path = "/srv/git/saltbox/scripts/update.sh"
-    result = subprocess.run(["bash", update_script_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if result.returncode != 0:
-        print("Update script failed.")
-        sys.exit(result.returncode)
+    update_script_result = subprocess.run(["bash", update_script_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if update_script_result.returncode != 0:
+        raise Exception(f"Failed running update.sh with error: {update_script_result.stderr.decode('utf-8')}")
 
     # Change ownership of the ansible directory
-    subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    chown_sb_result = subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if chown_sb_result.returncode != 0:
+        raise Exception(f"Failed chowning Ansible venv with error: {chown_sb_result.stderr.decode('utf-8')}")
 
     if recreate:
         print("Done recreating Ansible venv.")
