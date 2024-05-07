@@ -585,6 +585,7 @@ def log_subprocess_result(result, cmd, log_file_path):
     with open(log_file_path, "a") as log_file:
         # Log the command
         log_file.write("Command Executed: " + ' '.join(cmd) + "\n")
+        log_file.write(f"Return Code: {result.returncode}\n")
 
         # Decode the stdout and stderr
         stdout = result.stdout.decode('utf-8') if result.stdout else ""
@@ -600,9 +601,8 @@ def log_subprocess_result(result, cmd, log_file_path):
             log_file.write("Standard Error:\n")
             log_file.write(stderr + "\n\n")
 
-        # Log the return code
-        log_file.write(f"Return Code: {result.returncode}\n\n")
-        log_file.write("-" * 40 + "\n\n")  # Add a separator after each entry
+        # Add a separator after each entry
+        log_file.write("-" * 40 + "\n\n")
 
 
 def run_command(cmd, env=None, cwd=None):
@@ -656,7 +656,7 @@ def manage_ansible_venv(recreate=False):
             cmd = ["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"]
             run_command(cmd, env)
 
-            cmd = ["apt", "install", "python3.12", "python3.12-dev", "python3.12-distutils", "python3.12-venv", "-y"]
+            cmd = ["apt-get", "install", "python3.12", "python3.12-dev", "python3.12-distutils", "python3.12-venv", "-y"]
             run_command(cmd, env)
 
             cmd = [python_cmd, "-m", "ensurepip"]
