@@ -572,6 +572,61 @@ def handle_sandbox_branch(arguments):
     print(f"Sandbox repository branch switched to {arguments.branch_name} and settings updated.")
 
 
+def log_subprocess_result(result, cmd, log_file_path):
+    """
+    Logs the command, output, and errors of a subprocess result to a file, appending to the existing contents.
+
+    Parameters:
+    result (subprocess.CompletedProcess): The result object from subprocess.run.
+    cmd (list): The command that was executed.
+    log_file_path (str): Path to the log file where output and errors should be appended.
+    """
+    # Open the log file in append mode
+    with open(log_file_path, "a") as log_file:
+        # Log the command
+        log_file.write("Command Executed: " + ' '.join(cmd) + "\n")
+
+        # Decode the stdout and stderr
+        stdout = result.stdout.decode('utf-8') if result.stdout else ""
+        stderr = result.stderr.decode('utf-8') if result.stderr else ""
+
+        # Write stdout to the log file if there is any output
+        if stdout:
+            log_file.write("Standard Output:\n")
+            log_file.write(stdout + "\n\n")  # Add a newline for separation
+
+        # Write stderr to the log file if there are any errors
+        if stderr:
+            log_file.write("Standard Error:\n")
+            log_file.write(stderr + "\n\n")
+
+        # Log the return code
+        log_file.write(f"Return Code: {result.returncode}\n\n")
+        log_file.write("-" * 40 + "\n\n")  # Add a separator after each entry
+
+
+def run_command(cmd, env=None, cwd=None):
+    """
+    Executes a command using subprocess and logs the results, appending them to a log file.
+
+    Parameters:
+    cmd (list): The command to execute as a list of arguments.
+    env (dict, optional): Dictionary of environment variables to set for the subprocess.
+    cwd (str, optional): Directory to change to before executing the command.
+    """
+    # Define the log file path
+    log_file_path = "/srv/git/saltbox/ansible-venv.log"
+
+    # Run the command
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env, cwd=cwd)
+
+    # Log the result
+    log_subprocess_result(result, cmd, log_file_path)
+
+    if result.returncode != 0:
+        raise Exception(f"Failed running {' '.join(cmd)} with error: {result.stderr.decode('utf-8')}")
+
+
 def manage_ansible_venv(recreate=False):
     if os.path.isdir("/srv/ansible/venv/bin") and not os.path.isfile("/srv/ansible/venv/bin/python3.12"):
         print("Python 3.12 not detected in venv, forcing recreate.")
@@ -583,13 +638,13 @@ def manage_ansible_venv(recreate=False):
         print("Updating Ansible venv.")
 
     ansible_venv_path = "/srv/ansible"
-    release = subprocess.check_output(["lsb_release", "-cs"], text=True).strip()
+    cmd = ["lsb_release", "-cs"]
+    release = subprocess.check_output(cmd, text=True).strip()
 
     # Remove the existing venv directory during recreate
     if recreate:
-        delete_venv_result = subprocess.run(["rm", "-rf", ansible_venv_path])
-        if delete_venv_result.returncode != 0:
-            raise Exception(f"Failed deleting Ansible venv with error: {delete_venv_result.stderr.decode('utf-8')}")
+        cmd = ["rm", "-rf", ansible_venv_path]
+        run_command(cmd)
 
     if not os.path.isdir(ansible_venv_path):
         env = os.environ.copy()
@@ -598,40 +653,38 @@ def manage_ansible_venv(recreate=False):
 
         # Handle Python installation based on Ubuntu release
         if release == "focal" or release == "jammy":
-            add_repository_result = subprocess.run(["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if add_repository_result.returncode != 0:
-                raise Exception(f"Failed adding deadsnakes ppa with error: {add_repository_result.stderr.decode('utf-8')}")
-            install_python_result = subprocess.run(["apt", "install", "python3.12", "python3.12-dev","python3.12-distutils", "python3.12-venv", "-y"], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if install_python_result.returncode != 0:
-                raise Exception(f"Failed installing Python 3.12 with error: {install_python_result.stderr.decode('utf-8')}")
-            ensurepip_result = subprocess.run([f"{python_cmd}", "-m", "ensurepip"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            if ensurepip_result.returncode != 0:
-                raise Exception(f"Failed running ensurepip with error: {ensurepip_result.stderr.decode('utf-8')}")
+            cmd = ["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"]
+            run_command(cmd, env)
+
+            cmd = ["apt", "install", "python3.12", "python3.12-dev", "python3.12-distutils", "python3.12-venv", "-y"]
+            run_command(cmd, env)
+
+            cmd = [python_cmd, "-m", "ensurepip"]
+            run_command(cmd)
+
             os.makedirs(ansible_venv_path, exist_ok=True)
-            deploy_venv_result = subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            if deploy_venv_result.returncode != 0:
-                raise Exception(f"Failed deploying Ansible venv with error: {deploy_venv_result.stderr.decode('utf-8')}")
+            cmd = [python_cmd, "-m", "venv", "venv"]
+            run_command(cmd, cwd=ansible_venv_path)
 
         elif release == "noble":
             os.makedirs(ansible_venv_path, exist_ok=True)
-            deploy_venv_noble_result = subprocess.run([python_cmd, "-m", "venv", "venv"], cwd=ansible_venv_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            if deploy_venv_noble_result.returncode != 0:
-                raise Exception(f"Failed deploying Python venv with error: {deploy_venv_noble_result.stderr.decode('utf-8')}")
+            cmd = [python_cmd, "-m", "venv", "venv"]
+            run_command(cmd, cwd=ansible_venv_path)
 
         else:
             print("Unsupported OS.")
             sys.exit(1)
 
-    # Run the Saltbox update script and handle its exit status
-    update_script_path = "/srv/git/saltbox/scripts/update.sh"
-    update_script_result = subprocess.run(["bash", update_script_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if update_script_result.returncode != 0:
-        raise Exception(f"Failed running update.sh with error: {update_script_result.stderr.decode('utf-8')}")
+    cmd = ["/srv/ansible/venv/bin/python3", "-m", "pip", "install", "--no-cache-dir", "--disable-pip-version-check",
+           "--upgrade", "pip", "setuptools", "wheel"]
+    run_command(cmd)
 
-    # Change ownership of the ansible directory
-    chown_sb_result = subprocess.run(["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    if chown_sb_result.returncode != 0:
-        raise Exception(f"Failed chowning Ansible venv with error: {chown_sb_result.stderr.decode('utf-8')}")
+    cmd = ["/srv/ansible/venv/bin/python3", "-m", "pip", "install", "--no-cache-dir", "--disable-pip-version-check",
+           "--upgrade", "--requirement", "/srv/git/saltbox/requirements/requirements-saltbox.txt"]
+    run_command(cmd)
+
+    cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
+    run_command(cmd)
 
     if recreate:
         print("Done recreating Ansible venv.")
