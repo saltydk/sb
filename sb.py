@@ -584,8 +584,8 @@ def log_subprocess_result(result, cmd, log_file_path):
     # Open the log file in append mode
     with open(log_file_path, "a") as log_file:
         # Log the command
-        log_file.write("Command Executed: " + ' '.join(cmd) + "\n")
-        log_file.write(f"Return Code: {result.returncode}\n")
+        log_file.write(f"Command Executed: {' '.join(cmd)}\n")
+        log_file.write(f"Return Code: {result.returncode}\n\n")
 
         # Decode the stdout and stderr
         stdout = result.stdout.decode('utf-8') if result.stdout else ""
