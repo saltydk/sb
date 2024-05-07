@@ -680,7 +680,7 @@ def manage_ansible_venv(recreate=False):
     run_command(cmd)
 
     cmd = ["/srv/ansible/venv/bin/python3", "-m", "pip", "install", "--no-cache-dir", "--disable-pip-version-check",
-           "--upgrade", "--requirement", "/srv/git/saltbox/requirements/requirements-saltbox.txt"]
+           "--upgrade", "--requirement", "/srv/git/sb/requirements-saltbox.txt"]
     run_command(cmd)
 
     cmd = ["chown", "-R", f"{SALTBOX_USER}:{SALTBOX_USER}", ansible_venv_path]
