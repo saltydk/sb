@@ -500,6 +500,12 @@ def handle_bench(_arguments):
         print(f"An error occurred while executing the benchmark: {e}")
 
 
+def handle_diag(_arguments):
+    # Run diag role
+    tags = ['diag']
+    run_ansible_playbook(SALTBOX_REPO_PATH, SALTBOX_PLAYBOOK_PATH, ANSIBLE_PLAYBOOK_BINARY_PATH, tags)
+
+
 def handle_inventory(_arguments):
     file_path = "/srv/git/saltbox/inventories/host_vars/localhost.yml"
     default_editor = "nano"
@@ -737,6 +743,10 @@ parser_install.set_defaults(func=handle_install)
 # Create a parser for the "bench" command
 parser_bench = subparsers.add_parser('bench', help='Run bench.sh')
 parser_bench.set_defaults(func=handle_bench)
+
+# Create a parser for the "diag" command
+parser_diag = subparsers.add_parser('diag', help='Run diag Saltbox tag')
+parser_diag.set_defaults(func=handle_diag)
 
 # Create a parser for the "recreate-venv" command
 parser_recreate_venv = subparsers.add_parser('recreate-venv', help='Re-create the Ansible Python Virtual Environment')
