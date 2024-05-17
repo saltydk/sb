@@ -44,3 +44,8 @@ jobs:
           author_email: username@users.noreply.github.com
           message: 'Continuous Integration Updated Binary'
           add: 'sb'
+
+      - uses: sarisia/actions-status-discord@v1
+        if: always()
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}

@@ -662,7 +662,8 @@ def manage_ansible_venv(recreate=False):
             cmd = ["add-apt-repository", "ppa:deadsnakes/ppa", "--yes"]
             run_command(cmd, env)
 
-            cmd = ["apt-get", "install", "python3.12", "python3.12-dev", "python3.12-distutils", "python3.12-venv", "-y"]
+            cmd = ["apt-get", "install", "python3.12", "python3.12-dev", "python3.12-distutils", "python3.12-venv",
+                   "-y"]
             run_command(cmd, env)
 
             cmd = [python_cmd, "-m", "ensurepip"]
