@@ -746,7 +746,7 @@ parser_bench = subparsers.add_parser('bench', help='Run bench.sh')
 parser_bench.set_defaults(func=handle_bench)
 
 # Create a parser for the "diag" command
-parser_diag = subparsers.add_parser('diag', help='Run diag Saltbox tag')
+parser_diag = subparsers.add_parser('diag', help='Run Saltbox diagnose for support')
 parser_diag.set_defaults(func=handle_diag)
 
 # Create a parser for the "recreate-venv" command
