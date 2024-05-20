@@ -149,7 +149,7 @@ fi
 # Clone SB repo
 run_cmd mkdir -p /srv/git
 run_cmd mkdir -p /srv/ansible
-run_cmd git clone --branch master "${SB_REPO}" "$SB_PATH"
+run_cmd git clone --depth 1 --branch master "${SB_REPO}" "$SB_PATH"
 
 # Set chmod +x on script files
 run_cmd chmod +x $SB_PATH/*.sh

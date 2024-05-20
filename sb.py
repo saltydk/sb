@@ -271,7 +271,7 @@ def run_ansible_playbook(repo_path, playbook_path, ansible_binary_path, tags=Non
     print(f"\nPlaybook {playbook_path} executed successfully.\n")
 
 
-def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=None, custom_commands=None):
+def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=None, custom_commands=None, depth=None):
     # Get current branch name
     current_branch = subprocess.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=repo_path, stdout=subprocess.PIPE,
                                     text=True).stdout.strip()
@@ -290,24 +290,33 @@ def git_fetch_and_reset(repo_path, default_branch='master', post_fetch_script=No
     else:
         branch = default_branch
 
+    # Fetch command with optional depth
+    fetch_command = ['git', 'fetch', '--quiet']
+    if depth is not None:
+        fetch_command.extend(['--depth', str(depth)])
+
     # Commands to fetch and reset
     commands = [
-        ['git', 'fetch', '--quiet'],
+        fetch_command,
         ['git', 'clean', '--quiet', '-df'],
         ['git', 'reset', '--quiet', '--hard', '@{u}'],
         ['git', 'checkout', '--quiet', branch],
         ['git', 'clean', '--quiet', '-df'],
         ['git', 'reset', '--quiet', '--hard', '@{u}'],
         ['git', 'submodule', 'update', '--init', '--recursive'],
-        ['chown', '-R', f'{SALTBOX_USER}:{SALTBOX_USER}', repo_path]
     ]
 
+    # Execute commands
     for command in commands:
         subprocess.run(command, cwd=repo_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+    # Clean up old history if depth is specified
+    if depth is not None:
+        subprocess.run(['git', 'gc', '--prune=now', '--aggressive'], cwd=repo_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(['git', 'prune'], cwd=repo_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     if post_fetch_script:
-        subprocess.run(post_fetch_script, shell=True, cwd=repo_path, stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL)
+        subprocess.run(post_fetch_script, shell=True, cwd=repo_path, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     if custom_commands:
         for command in custom_commands:
@@ -392,7 +401,7 @@ def update_sb(sb_repo_path):
         sys.exit(1)
 
     # Perform git operations
-    git_fetch_and_reset(sb_repo_path, "master")
+    git_fetch_and_reset(sb_repo_path, "master", depth=1)
 
     # Specific task for sb_update: Change permissions of sb.sh to 775
     sb_sh_path = os.path.join(sb_repo_path, 'sb.sh')

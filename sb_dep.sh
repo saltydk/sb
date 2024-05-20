@@ -118,6 +118,7 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 if [[ $release =~ (focal|jammy)$ ]]; then
     sources_file="/etc/apt/sources.list"
 
+    run_cmd rm -rf /etc/apt/sources.list.d/* || error "Failed cleaning apt sources directory"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) universe" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) restricted" "$sources_file"
@@ -128,6 +129,7 @@ if [[ $release =~ (focal|jammy)$ ]]; then
 elif [[ $release =~ (noble)$ ]]; then
     sources_file="/etc/apt/sources.list"
 
+    run_cmd rm -rf /etc/apt/sources.list.d/* || error "Failed cleaning apt sources directory"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" "$sources_file"
     add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-backports main restricted universe multiverse" "$sources_file"
