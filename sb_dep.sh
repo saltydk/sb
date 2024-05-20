@@ -74,6 +74,17 @@ install_pip() {
   run_cmd python3 get-pip.py || error "Failed to install pip3."
 }
 
+add_repo() {
+    local repo="$1"
+    local file="$2"
+
+    if ! grep -q "^${repo}$" "$file"; then
+        echo "$repo" >> "$file" || error "Failed to add $repo to $file"
+    else
+        echo "$repo already present in $file."
+    fi
+}
+
 ################################
 # Main
 ################################
@@ -105,19 +116,24 @@ release=$(lsb_release -cs) || error "Failed to determine Ubuntu release"
 
 ## Add apt repos
 if [[ $release =~ (focal|jammy)$ ]]; then
-    run_cmd add-apt-repository main -n -y || error "Failed to add main repository"
-    run_cmd add-apt-repository universe -n -y || error "Failed to add universe repository"
-    run_cmd add-apt-repository restricted -n -y || error "Failed to add restricted repository"
-    run_cmd add-apt-repository multiverse -n -y || error "Failed to add multiverse repository"
+    sources_file="/etc/apt/sources.list"
+
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main" "$sources_file"
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) universe" "$sources_file"
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) restricted" "$sources_file"
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) multiverse" "$sources_file"
+
     run_cmd apt-get update || error "Failed to update apt-get repositories"
 
 elif [[ $release =~ (noble)$ ]]; then
-  echo " " > /etc/apt/sources.list
-  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" || error "Failed to add $(lsb_release -sc) repositoríes"
-  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-updates repositoríes"
-  run_cmd add-apt-repository -n -y "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-backports main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-backports repositoríes"
-  run_cmd add-apt-repository -n -y "deb http://security.ubuntu.com/ubuntu $(lsb_release -sc)-security main restricted universe multiverse" || error "Failed to add $(lsb_release -sc)-security repositoríes"
-  run_cmd apt update
+    sources_file="/etc/apt/sources.list"
+
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc) main restricted universe multiverse" "$sources_file"
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-updates main restricted universe multiverse" "$sources_file"
+    add_repo "deb http://archive.ubuntu.com/ubuntu/ $(lsb_release -sc)-backports main restricted universe multiverse" "$sources_file"
+    add_repo "deb http://security.ubuntu.com/ubuntu $(lsb_release -sc)-security main restricted universe multiverse" "$sources_file"
+
+    run_cmd apt-get update || error "Failed to update apt-get repositories"
 
 else
     error "Unsupported Distro, exiting."
